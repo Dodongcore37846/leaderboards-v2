@@ -1,19 +1,5 @@
-// Add this to your tab navigation event handler
-} else if (tabId === 'data-summary') {
-    loadDataSummary();
-}
-
-// Function to load data summary
-function loadDataSummary() {
-    calculateSummaryStatistics();
-    populateReadingLevelTable();
-    populateAssessmentTypeTable();
-    populateStudentProgressTable();
-    renderSummaryCharts();
-}
-
 // Function to calculate summary statistics
-function calculateSummaryStatistics() {
+function calculateSummaryStatistics(assessments) {
     if (assessments.length === 0) return;
     
     // Calculate average word recognition and comprehension
@@ -23,7 +9,7 @@ function calculateSummaryStatistics() {
     const avgWR = (totalWR / assessments.length).toFixed(1);
     const avgComp = (totalComp / assessments.length).toFixed(1);
     
-    document.getElementById('avg-word-recognition').textContent = `${avgWR}%`;
+    document.getElementById('avg-wr').textContent = `${avgWR}%`;
     document.getElementById('avg-comprehension').textContent = `${avgComp}%`;
     document.getElementById('total-assessments').textContent = assessments.length;
     
@@ -34,7 +20,7 @@ function calculateSummaryStatistics() {
 }
 
 // Function to populate reading level table
-function populateReadingLevelTable() {
+function populateReadingLevelTable(assessments) {
     const tableBody = document.querySelector('#readingLevelTable tbody');
     tableBody.innerHTML = '';
     
@@ -81,7 +67,7 @@ function populateReadingLevelTable() {
 }
 
 // Function to populate assessment type table
-function populateAssessmentTypeTable() {
+function populateAssessmentTypeTable(assessments) {
     const tableBody = document.querySelector('#assessmentTypeTable tbody');
     tableBody.innerHTML = '';
     
@@ -120,7 +106,7 @@ function populateAssessmentTypeTable() {
 }
 
 // Function to populate student progress table
-function populateStudentProgressTable() {
+function populateStudentProgressTable(students, assessments) {
     const tableBody = document.querySelector('#studentProgressTable tbody');
     tableBody.innerHTML = '';
     
@@ -152,7 +138,7 @@ function populateStudentProgressTable() {
 }
 
 // Function to render summary charts
-function renderSummaryCharts() {
+function renderSummaryCharts(assessments, students) {
     // Assessment Type Chart
     const typeCtx = document.getElementById('assessmentTypeChart').getContext('2d');
     const typeData = {};
@@ -248,4 +234,10 @@ function renderSummaryCharts() {
             }
         }
     });
+}
+
+// Utility function to format date
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
 }
