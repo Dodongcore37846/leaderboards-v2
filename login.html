@@ -171,9 +171,9 @@
         </div>
         <form id="login-form">
             <div class="form-group">
-                <label for="login-username">Username</label>
-                <input type="text" id="login-username" name="username" required>
-                <i class="fas fa-user input-icon"></i>
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" name="email" required>
+                <i class="fas fa-envelope input-icon"></i>
             </div>
             <div class="form-group">
                 <label for="login-password">Password</label>
@@ -234,9 +234,9 @@
         
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.firestore();
-    </script>
-    <script>
+
         // DOM Elements
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
@@ -250,32 +250,29 @@
         const signupPasswordToggle = document.getElementById('signup-password-toggle');
         const loginBtn = document.getElementById('loginBtn');
 
-        // Password visibility toggles
-        loginPasswordToggle.addEventListener('click', function() {
-            const passwordField = document.getElementById('login-password');
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                loginPasswordToggle.classList.remove('fa-eye');
-                loginPasswordToggle.classList.add('fa-eye-slash');
-            } else {
-                passwordField.type = 'password';
-                loginPasswordToggle.classList.remove('fa-eye-slash');
-                loginPasswordToggle.classList.add('fa-eye');
+        // Check auth state
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User is signed in, redirect to dashboard.
+                window.location.href = 'dashboard.html';
             }
         });
 
-        signupPasswordToggle.addEventListener('click', function() {
-            const passwordField = document.getElementById('signup-password');
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                signupPasswordToggle.classList.remove('fa-eye');
-                signupPasswordToggle.classList.add('fa-eye-slash');
+        // Password visibility toggles
+        function togglePasswordVisibility(field, toggle) {
+            if (field.type === 'password') {
+                field.type = 'text';
+                toggle.classList.remove('fa-eye');
+                toggle.classList.add('fa-eye-slash');
             } else {
-                passwordField.type = 'password';
-                signupPasswordToggle.classList.remove('fa-eye-slash');
-                signupPasswordToggle.classList.add('fa-eye');
+                field.type = 'password';
+                toggle.classList.remove('fa-eye-slash');
+                toggle.classList.add('fa-eye');
             }
-        });
+        }
+
+        loginPasswordToggle.addEventListener('click', () => togglePasswordVisibility(document.getElementById('login-password'), loginPasswordToggle));
+        signupPasswordToggle.addEventListener('click', () => togglePasswordVisibility(document.getElementById('signup-password'), signupPasswordToggle));
 
         // Show signup form
         showSignup.onclick = function() {
@@ -293,7 +290,7 @@
         function showLogin() {
             loginForm.style.display = 'block';
             signupForm.style.display = 'none';
-            formTitle.textContent = 'Login to Your Account';
+            formTitle.textContent = "TEACHER'S PORTAL";
             toggleText.innerHTML = "Don't have an account? <a id='show-signup'>Sign Up</a>";
             document.getElementById('show-signup').onclick = showSignup.onclick;
             loginError.textContent = '';
@@ -306,48 +303,18 @@
             e.preventDefault();
             loginError.textContent = '';
             
-            const username = document.getElementById('login-username').value;
+            const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             
-            // Show loading state
             loginBtn.innerHTML = '<span class="loading"></span> Logging in...';
             loginBtn.disabled = true;
             
             try {
-                // Check if user exists in Firestore
-                const userDoc = await db.collection('teachers').doc(username).get();
-                
-                if (!userDoc.exists) {
-                    loginError.textContent = 'Username not found. Please sign up first.';
-                    loginBtn.innerHTML = 'Login';
-                    loginBtn.disabled = false;
-                    return;
-                }
-                
-                const userData = userDoc.data();
-                
-                // Check password
-                if (userData.password !== password) {
-                    loginError.textContent = 'Incorrect password. Please try again.';
-                    loginBtn.innerHTML = 'Login';
-                    loginBtn.disabled = false;
-                    return;
-                }
-                
-                // Successful login - store user session in localStorage
-                localStorage.setItem('currentUser', JSON.stringify({
-                    username: username,
-                    email: userData.email,
-                    isAuthenticated: true,
-                    loginTime: new Date().toISOString()
-                }));
-                
-                // Redirect to dashboard after successful login
-                window.location.href = 'dashboard.html';
-                
+                await auth.signInWithEmailAndPassword(email, password);
+                // On success, onAuthStateChanged will redirect to dashboard.html
             } catch (error) {
-                console.error("Login error:", error);
-                loginError.textContent = 'An error occurred during login. Please try again.';
+                console.error("Login error:", error.message);
+                loginError.textContent = error.message;
                 loginBtn.innerHTML = 'Login';
                 loginBtn.disabled = false;
             }
@@ -364,7 +331,6 @@
             const password = document.getElementById('signup-password').value;
             const signupBtn = document.querySelector('#signup-form .btn');
 
-            // Basic validation
             if (username.length < 4) {
                 signupError.textContent = 'Username must be at least 4 characters.';
                 return;
@@ -373,59 +339,34 @@
                 signupError.textContent = 'Password must be at least 6 characters.';
                 return;
             }
-            if (!email.includes('@')) {
-                signupError.textContent = 'Please enter a valid email address.';
-                return;
-            }
 
-            // Show loading state
             signupBtn.innerHTML = '<span class="loading"></span> Creating Account...';
             signupBtn.disabled = true;
 
             try {
-                // Check if username already exists
-                const userDoc = await db.collection('teachers').doc(username).get();
-                
-                if (userDoc.exists) {
-                    signupError.textContent = 'Username already taken. Please choose another.';
-                    signupBtn.innerHTML = 'Create Account';
-                    signupBtn.disabled = false;
-                    return;
-                }
-                
-                // Check if email already exists
-                const emailQuery = await db.collection('teachers')
-                    .where('email', '==', email)
-                    .get();
-                
-                if (!emailQuery.empty) {
-                    signupError.textContent = 'Email already registered. Please use another email.';
-                    signupBtn.innerHTML = 'Create Account';
-                    signupBtn.disabled = false;
-                    return;
-                }
-                
-                // Add new user to Firestore
-                await db.collection('teachers').doc(username).set({
+                // Step 1: Create user with email and password
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Step 2: Store additional user info in Firestore
+                await db.collection('teachers').doc(user.uid).set({
+                    username: username,
                     email: email,
-                    password: password, // Note: In production, never store plain text passwords
                     createdAt: new Date().toISOString(),
                     lastLogin: null,
-                    progress: {} // This will store user progress data
                 });
                 
                 signupSuccess.textContent = 'Registration successful! You can now login.';
-                signupBtn.innerHTML = 'Create Account';
-                signupBtn.disabled = false;
                 
                 setTimeout(() => {
                     showLogin();
-                    document.getElementById('login-username').value = username;
+                    document.getElementById('login-email').value = email;
                 }, 2000);
-                
+
             } catch (error) {
-                console.error("Signup error:", error);
-                signupError.textContent = 'An error occurred during registration. Please try again.';
+                console.error("Signup error:", error.message);
+                signupError.textContent = error.message;
+            } finally {
                 signupBtn.innerHTML = 'Create Account';
                 signupBtn.disabled = false;
             }
