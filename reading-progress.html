@@ -7,6 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <style>
         :root {
             --primary: #4e73df;
@@ -199,7 +203,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="assessments.html">
+                        <a class="nav-link" href="assessment.html">
                             <i class="fas fa-file-alt me-2"></i>Assessments
                         </a>
                     </li>
@@ -613,87 +617,87 @@
     </script>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Get students and assessments from localStorage (same as assessment.html)
-    const STUDENTS_KEY = 'grade5ReadingTracker_students';
-    const ASSESSMENTS_KEY = 'grade5ReadingTracker_assessments';
-    const students = JSON.parse(localStorage.getItem(STUDENTS_KEY)) || [];
-    const assessments = JSON.parse(localStorage.getItem(ASSESSMENTS_KEY)) || [];
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get students and assessments from localStorage (same as assessment.html)
+            const STUDENTS_KEY = 'grade5ReadingTracker_students';
+            const ASSESSMENTS_KEY = 'grade5ReadingTracker_assessments';
+            const students = JSON.parse(localStorage.getItem(STUDENTS_KEY)) || [];
+            const assessments = JSON.parse(localStorage.getItem(ASSESSMENTS_KEY)) || [];
 
-    // Helper: Get latest assessment for each student
-    function getLatestAssessments() {
-        const latest = {};
-        assessments.forEach(a => {
-            if (!latest[a.studentId] || new Date(a.date) > new Date(latest[a.studentId].date)) {
-                latest[a.studentId] = a;
+            // Helper: Get latest assessment for each student
+            function getLatestAssessments() {
+                const latest = {};
+                assessments.forEach(a => {
+                    if (!latest[a.studentId] || new Date(a.date) > new Date(latest[a.studentId].date)) {
+                        latest[a.studentId] = a;
+                    }
+                });
+                return latest;
             }
+
+            // Helper: Get initials from name
+            function getInitials(name) {
+                return name.split(' ').map(w => w[0]).join('').toUpperCase();
+            }
+
+            // Update Top Readers and Students Needing Support lists
+            function updateStudentLists() {
+                const latest = getLatestAssessments();
+
+                // Top Readers: Independent level, sorted by highest WR+Comp
+                const topReaders = students
+                    .map(s => ({ student: s, assessment: latest[s.id] }))
+                    .filter(obj => obj.assessment && obj.assessment.readingLevel === 'Independent')
+                    .sort((a, b) => ((b.assessment.wordRecognition + b.assessment.comprehension) - (a.assessment.wordRecognition + a.assessment.comprehension)))
+                    .slice(0, 3);
+
+                // Students Needing Support: Frustration level, sorted by lowest WR+Comp
+                const needingSupport = students
+                    .map(s => ({ student: s, assessment: latest[s.id] }))
+                    .filter(obj => obj.assessment && obj.assessment.readingLevel === 'Frustration')
+                    .sort((a, b) => ((a.assessment.wordRecognition + a.assessment.comprehension) - (b.assessment.wordRecognition + b.assessment.comprehension)))
+                    .slice(0, 3);
+
+                // Render Top Readers
+                const topReadersList = document.querySelector('.card:has(.card-header:contains("Top Readers")) .list-group');
+                if (topReadersList) {
+                    topReadersList.innerHTML = '';
+                    topReaders.forEach(obj => {
+                        topReadersList.innerHTML += `
+                            <div class="list-group-item d-flex align-items-center">
+                                <div class="student-avatar">${getInitials(obj.student.name)}</div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">${obj.student.name}</h6>
+                                    <small class="text-muted">Word Recognition: ${obj.assessment.wordRecognition}% | Comprehension: ${obj.assessment.comprehension}%</small>
+                                </div>
+                                <span class="reading-level level-independent">Independent</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Render Students Needing Support
+                const supportList = document.querySelector('.card:has(.card-header:contains("Students Needing Support")) .list-group');
+                if (supportList) {
+                    supportList.innerHTML = '';
+                    needingSupport.forEach(obj => {
+                        supportList.innerHTML += `
+                            <div class="list-group-item d-flex align-items-center">
+                                <div class="student-avatar">${getInitials(obj.student.name)}</div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">${obj.student.name}</h6>
+                                    <small class="text-muted">Word Recognition: ${obj.assessment.wordRecognition}% | Comprehension: ${obj.assessment.comprehension}%</small>
+                                </div>
+                                <span class="reading-level level-frustration">Frustration</span>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            // Call on page load
+            updateStudentLists();
         });
-        return latest;
-    }
-
-    // Helper: Get initials from name
-    function getInitials(name) {
-        return name.split(' ').map(w => w[0]).join('').toUpperCase();
-    }
-
-    // Update Top Readers and Students Needing Support lists
-    function updateStudentLists() {
-        const latest = getLatestAssessments();
-
-        // Top Readers: Independent level, sorted by highest WR+Comp
-        const topReaders = students
-            .map(s => ({ student: s, assessment: latest[s.id] }))
-            .filter(obj => obj.assessment && obj.assessment.readingLevel === 'Independent')
-            .sort((a, b) => ((b.assessment.wordRecognition + b.assessment.comprehension) - (a.assessment.wordRecognition + a.assessment.comprehension)))
-            .slice(0, 3);
-
-        // Students Needing Support: Frustration level, sorted by lowest WR+Comp
-        const needingSupport = students
-            .map(s => ({ student: s, assessment: latest[s.id] }))
-            .filter(obj => obj.assessment && obj.assessment.readingLevel === 'Frustration')
-            .sort((a, b) => ((a.assessment.wordRecognition + a.assessment.comprehension) - (b.assessment.wordRecognition + b.assessment.comprehension)))
-            .slice(0, 3);
-
-        // Render Top Readers
-        const topReadersList = document.querySelector('.card:has(.card-header:contains("Top Readers")) .list-group');
-        if (topReadersList) {
-            topReadersList.innerHTML = '';
-            topReaders.forEach(obj => {
-                topReadersList.innerHTML += `
-                    <div class="list-group-item d-flex align-items-center">
-                        <div class="student-avatar">${getInitials(obj.student.name)}</div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0">${obj.student.name}</h6>
-                            <small class="text-muted">Word Recognition: ${obj.assessment.wordRecognition}% | Comprehension: ${obj.assessment.comprehension}%</small>
-                        </div>
-                        <span class="reading-level level-independent">Independent</span>
-                    </div>
-                `;
-            });
-        }
-
-        // Render Students Needing Support
-        const supportList = document.querySelector('.card:has(.card-header:contains("Students Needing Support")) .list-group');
-        if (supportList) {
-            supportList.innerHTML = '';
-            needingSupport.forEach(obj => {
-                supportList.innerHTML += `
-                    <div class="list-group-item d-flex align-items-center">
-                        <div class="student-avatar">${getInitials(obj.student.name)}</div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0">${obj.student.name}</h6>
-                            <small class="text-muted">Word Recognition: ${obj.assessment.wordRecognition}% | Comprehension: ${obj.assessment.comprehension}%</small>
-                        </div>
-                        <span class="reading-level level-frustration">Frustration</span>
-                    </div>
-                `;
-            });
-        }
-    }
-
-    // Call on page load
-    updateStudentLists();
-});
-</script>
+    </script>
 </body>
 </html>

@@ -6,6 +6,10 @@
     <title>Grade 5 Reading Progress Tracker - Students</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <style>
         :root {
             --primary: #4e73df;
@@ -135,7 +139,7 @@
             <h4 class="mb-0"><i class="fas fa-user-graduate me-2 text-primary"></i>Student Management</h4>
             <div>
                 <button class="btn btn-sm btn-primary" id="addStudentBtn"><i class="fas fa-plus me-1"></i>Add Student</button>
-                <a href="reading.html" class="btn btn-sm btn-outline-secondary ms-2"><i class="fas fa-arrow-left me-1"></i>Back to Reading Tracker</a>
+                <a href="dashboard.html" class="btn btn-sm btn-outline-secondary ms-2"><i class="fas fa-arrow-left me-1"></i>Back to Dashboard</a>
             </div>
         </div>
         
@@ -186,7 +190,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold"><i class="fas fa-list me-2"></i>All Students</h6>
-                        <span class="badge bg-primary rounded-pill" id="studentCount">5</span>
+                        <span class="badge bg-primary rounded-pill" id="studentCount">0</span>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -248,367 +252,396 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Data storage keys
-        const STUDENTS_KEY = 'grade5ReadingTracker_students';
-        const ASSESSMENTS_KEY = 'grade5ReadingTracker_assessments';
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA13LOZxJXQcVq83Gufk7TbTHdkWxhRaak",
+            authDomain: "leaderboard-f8064.firebaseapp.com",
+            projectId: "leaderboard-f8064",
+            storageBucket: "leaderboard-f8064.appspot.com",
+            messagingSenderId: "889576004965",
+            appId: "1:889576004965:web:d0565a575950f03560d58c",
+            measurementId: "G-0KWHDEJ0R7"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-        // Initialize data
-        let students = JSON.parse(localStorage.getItem(STUDENTS_KEY)) || [];
-        let assessments = JSON.parse(localStorage.getItem(ASSESSMENTS_KEY)) || [];
-        let currentDeleteId = null;
+        let currentTeacherId = null;
+        let currentDeleteStudentId = null;
 
-        // Sample data for demonstration
-        const sampleStudents = [
-            { id: 1, name: 'Juan Dela Cruz', studentId: 'G5-001', birthDate: '2013-05-15', gender: 'male', readingLevel: 'Instructional', createdAt: '2023-08-01' },
-            { id: 2, name: 'Maria Santos', studentId: 'G5-002', birthDate: '2013-02-20', gender: 'female', readingLevel: 'Independent', createdAt: '2023-08-01' },
-            { id: 3, name: 'Jose Reyes', studentId: 'G5-003', birthDate: '2012-11-10', gender: 'male', readingLevel: 'Frustration', createdAt: '2023-08-01' },
-            { id: 4, name: 'Ana Lopez', studentId: 'G5-004', birthDate: '2013-07-30', gender: 'female', readingLevel: 'Instructional', createdAt: '2023-08-01' },
-            { id: 5, name: 'Pedro Garcia', studentId: 'G5-005', birthDate: '2013-01-05', gender: 'male', readingLevel: 'Independent', createdAt: '2023-08-01' }
-        ];
+        // Authentication check
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentTeacherId = user.uid;
+                loadAllStudentsTable();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
 
-        // Load sample data if no data exists
-        if (students.length === 0) {
-            students = sampleStudents;
-            saveStudents();
-        }
-
-        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            // Load initial data
-            loadAllStudentsTable();
-            
             // Student form submission
             document.getElementById('studentForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                addStudent();
+                addUpdateStudent();
             });
             
             // Confirm delete button
             document.getElementById('confirmDelete').addEventListener('click', function() {
-                if (currentDeleteId) {
-                    deleteStudent(currentDeleteId);
-                    currentDeleteId = null;
+                if (currentDeleteStudentId) {
+                    deleteStudent(currentDeleteStudentId);
+                    currentDeleteStudentId = null;
                     const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
                     modal.hide();
                 }
             });
             
-            // Add event listener for view student buttons
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.view-student')) {
-                    const studentId = parseInt(e.target.closest('.view-student').getAttribute('data-id'));
-                    viewStudentDetails(studentId);
-                }
-                
-                if (e.target.closest('.edit-student')) {
-                    const studentId = parseInt(e.target.closest('.edit-student').getAttribute('data-id'));
-                    editStudent(studentId);
-                }
-                
-                if (e.target.closest('.delete-student')) {
-                    const studentId = parseInt(e.target.closest('.delete-student').getAttribute('data-id'));
-                    showDeleteConfirm(studentId);
+            // Event delegation for view, edit, delete buttons
+            document.getElementById('allStudentsTableBody').addEventListener('click', function(e) {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const studentFirebaseId = target.getAttribute('data-firebase-id');
+
+                if (target.classList.contains('view-student')) {
+                    viewStudentDetails(studentFirebaseId);
+                } else if (target.classList.contains('edit-student')) {
+                    editStudent(studentFirebaseId);
+                } else if (target.classList.contains('delete-student')) {
+                    showDeleteConfirm(studentFirebaseId);
                 }
             });
-            
-            // Redirect "Back to Reading Tracker" to dashboard.html
-            const backBtn = document.querySelector('a.btn-outline-secondary');
-            if (backBtn) {
-                backBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    window.location.href = 'dashboard.html';
-                });
-            }
 
-            // Sidebar: Redirect Dashboard tab to dashboard.html
-            const dashboardTab = document.querySelector('a.nav-link[href="dashboard.html"]');
-            if (dashboardTab) {
-                dashboardTab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    window.location.href = 'dashboard.html';
-                });
-            }
+             // Reset form when "Add Student" button is clicked (if it was in update mode)
+             document.getElementById('addStudentBtn').addEventListener('click', function() {
+                document.getElementById('studentForm').reset();
+                document.getElementById('submitButton').textContent = 'Add Student';
+                document.getElementById('submitButton').classList.remove('btn-warning');
+                document.getElementById('submitButton').classList.add('btn-primary');
+                document.getElementById('studentId').removeAttribute('readonly'); // Ensure student ID is editable for new students
+            });
         });
 
-        // Function to add a new student
-        function addStudent() {
+        // Function to add or update a student
+        async function addUpdateStudent() {
             const name = document.getElementById('studentName').value;
             const studentId = document.getElementById('studentId').value;
             const birthDate = document.getElementById('birthDate').value;
             const gender = document.getElementById('gender').value;
-            
-            // Check if student ID already exists
-            if (students.some(student => student.studentId === studentId)) {
-                showToast('Student ID already exists!', 'error');
-                return;
-            }
-            
-            const newStudent = {
-                id: Date.now(), // Use timestamp as unique ID
-                name,
-                studentId,
-                birthDate,
-                gender,
-                readingLevel: 'Not Assessed',
-                createdAt: new Date().toISOString()
-            };
-            
-            students.push(newStudent);
-            saveStudents();
-            
-            // Reset form
-            document.getElementById('studentForm').reset();
-            
-            // Update student table
-            loadAllStudentsTable();
-            
-            showToast('Student added successfully!', 'success');
-        }
+            const submitButton = document.getElementById('submitButton');
 
-        // Function to load all students table
-        function loadAllStudentsTable() {
-            const tableBody = document.getElementById('allStudentsTableBody');
-            const studentCount = document.getElementById('studentCount');
-            
-            // Update student count
-            studentCount.textContent = students.length;
-            
-            tableBody.innerHTML = '';
-            
-            if (students.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center py-4">
-                            <div class="empty-state">
-                                <i class="fas fa-user-graduate"></i>
-                                <h5>No Students Found</h5>
-                                <p>Add students to start tracking reading progress</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+            if (!currentTeacherId) {
+                showToast('Error: User not authenticated.', 'error');
                 return;
             }
-            
-            students.forEach(student => {
-                const row = document.createElement('tr');
-                
-                // Determine reading level class
-                let levelClass = 'level-not-assessed';
-                let levelText = 'Not Assessed';
-                
-                if (student.readingLevel === 'Independent') {
-                    levelClass = 'level-independent';
-                    levelText = 'Independent';
-                } else if (student.readingLevel === 'Instructional') {
-                    levelClass = 'level-instructional';
-                    levelText = 'Instructional';
-                } else if (student.readingLevel === 'Frustration') {
-                    levelClass = 'level-frustration';
-                    levelText = 'Frustration';
+
+            // Check if in update mode
+            const isUpdate = submitButton.textContent === 'Update Student';
+            let studentRef;
+
+            try {
+                if (!isUpdate) {
+                    // Check if student ID already exists for this teacher
+                    const existingStudent = await db.collection('students')
+                        .where('teacherId', '==', currentTeacherId)
+                        .where('studentId', '==', studentId)
+                        .get();
+
+                    if (!existingStudent.empty) {
+                        showToast('Student ID already exists for this teacher!', 'error');
+                        return;
+                    }
+
+                    // Add new student
+                    studentRef = await db.collection('students').add({
+                        teacherId: currentTeacherId,
+                        name,
+                        studentId,
+                        birthDate,
+                        gender,
+                        readingLevel: 'Not Assessed',
+                        createdAt: new Date().toISOString()
+                    });
+                    showToast('Student added successfully!', 'success');
+                } else {
+                    // Update existing student
+                    const firebaseIdToUpdate = submitButton.getAttribute('data-firebase-id');
+                    if (!firebaseIdToUpdate) {
+                        showToast('Error: Could not find student to update.', 'error');
+                        return;
+                    }
+                    studentRef = db.collection('students').doc(firebaseIdToUpdate);
+                    await studentRef.update({
+                        name,
+                        // studentId: studentId, // Student ID should generally not be changed after creation
+                        birthDate,
+                        gender
+                    });
+                    showToast('Student updated successfully!', 'success');
                 }
                 
-                row.innerHTML = `
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="student-avatar">
-                                ${student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                            </div>
-                            ${student.name}
-                        </div>
-                    </td>
-                    <td>${student.studentId}</td>
-                    <td>${student.gender.charAt(0).toUpperCase() + student.gender.slice(1)}</td>
-                    <td><span class="reading-level ${levelClass}">${levelText}</span></td>
-                    <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline-primary view-student" data-id="${student.id}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary edit-student" data-id="${student.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger delete-student" data-id="${student.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-
-        // Function to view student details
-        function viewStudentDetails(studentId) {
-            const student = students.find(s => s.id === studentId);
-            if (!student) return;
-            
-            // Get student assessments
-            const studentAssessments = assessments.filter(a => a.studentId === studentId)
-                .sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            // Prepare content for modal
-            let content = `
-                <div class="d-flex align-items-center mb-4">
-                    <div class="student-avatar" style="width: 60px; height: 60px; font-size: 1.5rem;">
-                        ${student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                        <h4 class="mb-0">${student.name}</h4>
-                        <p class="text-muted mb-0">ID: ${student.studentId}</p>
-                    </div>
-                </div>
-                
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <p><strong>Gender:</strong> ${student.gender.charAt(0).toUpperCase() + student.gender.slice(1)}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Birth Date:</strong> ${student.birthDate || 'Not specified'}</p>
-                    </div>
-                </div>
-                
-                <h5 class="mb-3">Assessment History</h5>
-            `;
-            
-            if (studentAssessments.length > 0) {
-                content += `
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Passage</th>
-                                    <th>Word Recognition</th>
-                                    <th>Comprehension</th>
-                                    <th>Level</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-                
-                studentAssessments.forEach(assessment => {
-                    // Determine reading level class
-                    let levelClass = '';
-                    if (assessment.readingLevel === 'Independent') levelClass = 'level-independent';
-                    else if (assessment.readingLevel === 'Instructional') levelClass = 'level-instructional';
-                    else if (assessment.readingLevel === 'Frustration') levelClass = 'level-frustration';
-                    
-                    content += `
-                        <tr>
-                            <td>${formatDate(assessment.date)}</td>
-                            <td>${assessment.type}</td>
-                            <td>${assessment.passage}</td>
-                            <td>${assessment.wordRecognition}%</td>
-                            <td>${assessment.comprehension}%</td>
-                            <td><span class="reading-level ${levelClass}">${assessment.readingLevel}</span></td>
-                        </tr>
-                    `;
-                });
-                
-                content += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } else {
-                content += '<p>No assessments recorded for this student.</p>';
-            }
-            
-            // Update modal content
-            document.getElementById('studentDetailsContent').innerHTML = content;
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
-            modal.show();
-        }
-
-        // Function to edit student
-        function editStudent(studentId) {
-            const student = students.find(s => s.id === studentId);
-            if (!student) return;
-            
-            // Populate the form with student data
-            document.getElementById('studentName').value = student.name;
-            document.getElementById('studentId').value = student.studentId;
-            document.getElementById('birthDate').value = student.birthDate;
-            document.getElementById('gender').value = student.gender;
-            
-            // Change the form button to "Update Student"
-            const submitButton = document.getElementById('submitButton');
-            submitButton.textContent = 'Update Student';
-            submitButton.classList.remove('btn-primary');
-            submitButton.classList.add('btn-warning');
-            
-            // Remove any existing submit listeners
-            const newForm = document.getElementById('studentForm').cloneNode(true);
-            document.getElementById('studentForm').parentNode.replaceChild(newForm, document.getElementById('studentForm'));
-            
-            // Add update listener
-            document.getElementById('studentForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Update student data
-                student.name = document.getElementById('studentName').value;
-                student.studentId = document.getElementById('studentId').value;
-                student.birthDate = document.getElementById('birthDate').value;
-                student.gender = document.getElementById('gender').value;
-                
-                saveStudents();
-                
-                // Reset form and button
                 document.getElementById('studentForm').reset();
                 submitButton.textContent = 'Add Student';
                 submitButton.classList.remove('btn-warning');
                 submitButton.classList.add('btn-primary');
-                
-                // Update table
-                loadAllStudentsTable();
-                
-                showToast('Student updated successfully!', 'success');
-                
-                // Reset the form handler
-                const resetForm = document.getElementById('studentForm').cloneNode(true);
-                document.getElementById('studentForm').parentNode.replaceChild(resetForm, document.getElementById('studentForm'));
-                document.getElementById('studentForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    addStudent();
+                document.getElementById('studentId').removeAttribute('readonly'); // Make student ID editable again
+                loadAllStudentsTable(); // Reload table with updated data
+            } catch (error) {
+                console.error("Error adding/updating student:", error);
+                showToast('Error saving student: ' + error.message, 'error');
+            }
+        }
+
+        // Function to load all students table
+        async function loadAllStudentsTable() {
+            if (!currentTeacherId) return; // Ensure teacher is logged in
+
+            const tableBody = document.getElementById('allStudentsTableBody');
+            const studentCountSpan = document.getElementById('studentCount');
+            
+            tableBody.innerHTML = ''; // Clear existing rows
+            studentCountSpan.textContent = '0'; // Reset count
+
+            try {
+                const studentsSnapshot = await db.collection('students')
+                    .where('teacherId', '==', currentTeacherId)
+                    .orderBy('name')
+                    .get();
+
+                const students = [];
+                studentsSnapshot.forEach(doc => {
+                    students.push({ firebaseId: doc.id, ...doc.data() });
                 });
-            });
+
+                studentCountSpan.textContent = students.length;
+
+                if (students.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="empty-state">
+                                    <i class="fas fa-user-graduate"></i>
+                                    <h5>No Students Found</h5>
+                                    <p>Add students to start tracking reading progress</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                students.forEach(student => {
+                    const row = document.createElement('tr');
+                    
+                    let levelClass = 'level-not-assessed';
+                    let levelText = 'Not Assessed';
+                    
+                    if (student.readingLevel === 'Independent') {
+                        levelClass = 'level-independent';
+                        levelText = 'Independent';
+                    } else if (student.readingLevel === 'Instructional') {
+                        levelClass = 'level-instructional';
+                        levelText = 'Instructional';
+                    } else if (student.readingLevel === 'Frustration') {
+                        levelClass = 'level-frustration';
+                        levelText = 'Frustration';
+                    }
+                    
+                    row.innerHTML = `
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="student-avatar">
+                                    ${student.name ? student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??'}
+                                </div>
+                                ${student.name}
+                            </div>
+                        </td>
+                        <td>${student.studentId}</td>
+                        <td>${student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : 'N/A'}</td>
+                        <td><span class="reading-level ${levelClass}">${levelText}</span></td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-outline-primary view-student" data-firebase-id="${student.firebaseId}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary edit-student" data-firebase-id="${student.firebaseId}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-student" data-firebase-id="${student.firebaseId}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading students:", error);
+                showToast('Error loading students: ' + error.message, 'error');
+            }
+        }
+
+        // Function to view student details
+        async function viewStudentDetails(firebaseId) {
+            try {
+                const studentDoc = await db.collection('students').doc(firebaseId).get();
+                if (!studentDoc.exists) {
+                    showToast('Student not found!', 'error');
+                    return;
+                }
+                const student = { firebaseId: studentDoc.id, ...studentDoc.data() };
+                
+                const studentAssessmentsSnapshot = await db.collection('assessments')
+                    .where('teacherId', '==', currentTeacherId)
+                    .where('studentFirebaseId', '==', firebaseId) // Link assessments by student's Firebase ID
+                    .orderBy('date', 'desc')
+                    .get();
+                
+                const studentAssessments = [];
+                studentAssessmentsSnapshot.forEach(doc => {
+                    studentAssessments.push(doc.data());
+                });
+
+                let content = `
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="student-avatar" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                            ${student.name ? student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??'}
+                        </div>
+                        <div>
+                            <h4 class="mb-0">${student.name}</h4>
+                            <p class="text-muted mb-0">ID: ${student.studentId}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Gender:</strong> ${student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : 'N/A'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Birth Date:</strong> ${student.birthDate || 'Not specified'}</p>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3">Assessment History</h5>
+                `;
+                
+                if (studentAssessments.length > 0) {
+                    content += `
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Passage</th>
+                                        <th>Word Recognition</th>
+                                        <th>Comprehension</th>
+                                        <th>Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    studentAssessments.forEach(assessment => {
+                        let levelClass = '';
+                        if (assessment.readingLevel === 'Independent') levelClass = 'level-independent';
+                        else if (assessment.readingLevel === 'Instructional') levelClass = 'level-instructional';
+                        else if (assessment.readingLevel === 'Frustration') levelClass = 'level-frustration';
+                        
+                        content += `
+                            <tr>
+                                <td>${formatDate(assessment.date)}</td>
+                                <td>${assessment.type}</td>
+                                <td>${assessment.passage}</td>
+                                <td>${assessment.wordRecognition}%</td>
+                                <td>${assessment.comprehension}%</td>
+                                <td><span class="reading-level ${levelClass}">${assessment.readingLevel}</span></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    content += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    content += '<p>No assessments recorded for this student.</p>';
+                }
+                
+                document.getElementById('studentDetailsContent').innerHTML = content;
+                const modal = new bootstrap.Modal(document.getElementById('studentDetailsModal'));
+                modal.show();
+
+            } catch (error) {
+                console.error("Error viewing student details:", error);
+                showToast('Error loading student details: ' + error.message, 'error');
+            }
+        }
+
+        // Function to edit student
+        async function editStudent(firebaseId) {
+            try {
+                const studentDoc = await db.collection('students').doc(firebaseId).get();
+                if (!studentDoc.exists) {
+                    showToast('Student not found!', 'error');
+                    return;
+                }
+                const student = { firebaseId: studentDoc.id, ...studentDoc.data() };
+            
+                document.getElementById('studentName').value = student.name;
+                document.getElementById('studentId').value = student.studentId;
+                document.getElementById('studentId').setAttribute('readonly', 'readonly'); // Make ID read-only during edit
+                document.getElementById('birthDate').value = student.birthDate;
+                document.getElementById('gender').value = student.gender;
+                
+                const submitButton = document.getElementById('submitButton');
+                submitButton.textContent = 'Update Student';
+                submitButton.classList.remove('btn-primary');
+                submitButton.classList.add('btn-warning');
+                submitButton.setAttribute('data-firebase-id', firebaseId); // Store firebase ID for update
+
+                // Scroll to the form
+                document.querySelector('.form-container').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error("Error editing student:", error);
+                showToast('Error preparing student for edit: ' + error.message, 'error');
+            }
         }
 
         // Function to show delete confirmation
-        function showDeleteConfirm(studentId) {
-            currentDeleteId = studentId;
+        function showDeleteConfirm(firebaseId) {
+            currentDeleteStudentId = firebaseId;
             const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
             modal.show();
         }
 
         // Function to delete student
-        function deleteStudent(studentId) {
-            // Remove student
-            students = students.filter(s => s.id !== studentId);
-            
-            // Remove associated assessments
-            assessments = assessments.filter(a => a.studentId !== studentId);
-            
-            saveStudents();
-            saveAssessments();
-            
-            // Update table
-            loadAllStudentsTable();
-            
-            showToast('Student deleted successfully!', 'success');
-        }
+        async function deleteStudent(firebaseId) {
+            try {
+                // Delete associated assessments first
+                const assessmentsToDelete = await db.collection('assessments')
+                    .where('teacherId', '==', currentTeacherId)
+                    .where('studentFirebaseId', '==', firebaseId)
+                    .get();
+                
+                const deleteAssessmentPromises = [];
+                assessmentsToDelete.forEach(doc => {
+                    deleteAssessmentPromises.push(db.collection('assessments').doc(doc.id).delete());
+                });
+                await Promise.all(deleteAssessmentPromises);
 
-        // Utility function to save students to localStorage
-        function saveStudents() {
-            localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
-        }
-
-        // Utility function to save assessments to localStorage
-        function saveAssessments() {
-            localStorage.setItem(ASSESSMENTS_KEY, JSON.stringify(assessments));
+                // Then delete the student
+                await db.collection('students').doc(firebaseId).delete();
+                
+                showToast('Student and associated assessments deleted successfully!', 'success');
+                loadAllStudentsTable(); // Reload table
+            } catch (error) {
+                console.error("Error deleting student:", error);
+                showToast('Error deleting student: ' + error.message, 'error');
+            }
         }
 
         // Utility function to format date
