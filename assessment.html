@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 5 Reading Assessments - Phil-IRI Based</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4e73df;
+            --secondary: #6f42c1;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fc;
+            --dark: #5a5c69;
+        }
+        
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary) 10%, var(--secondary) 100%);
+            height: 100vh;
+            position: fixed;
+            color: white;
+            padding-top: 20px;
+            width: 250px;
+            overflow-y: auto;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 15px 20px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .header {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        .reading-level {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .level-independent {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .level-instructional {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .level-frustration {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .assessment-card {
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        
+        .assessment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .assessment-details {
+            background-color: #f8f9fc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .philiri-criteria {
+            background-color: #e8f4f8;
+            border-left: 4px solid var(--info);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .philiri-guide {
+            background-color: #f8f9fc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar d-md-block">
+                <div class="text-center mb-4">
+                    <h4><i class="fas fa-book-reader me-2"></i>Reading Tracker</h4>
+                    <p class="text-white-50 small">Grade 5 Phil-IRI Monitoring</p>
+                </div>
+                
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="students.html">
+                            <i class="fas fa-user-graduate me-2"></i>Students
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="reading-progress.html">
+                            <i class="fas fa-chart-line me-2"></i>Progress Reports
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="assessment.html">
+                            <i class="fas fa-file-alt me-2"></i>Assessments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="leaderboard.html">
+                            <i class="fas fa-trophy me-2"></i>Leaderboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="print.html">
+                            <i class="fas fa-print me-2"></i>Print Reports
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="settings.html">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="mt-5 text-center">
+                    <div class="card bg-light text-dark">
+                        <div class="card-body py-3">
+                            <h6>Phil-IRI Guide</h6>
+                            <p class="small mb-0">Independent: 97-100% WR, 80-100% Comp</p>
+                            <p class="small mb-0">Instructional: 90-96% WR, 59-79% Comp</p>
+                            <p class="small">Frustration: Below 90% WR, Below 59% Comp</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-file-alt me-2 text-primary"></i>Reading Assessments</h4>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#assessmentModal">
+                        <i class="fas fa-plus me-1"></i>New Assessment
+                    </button>
+                </div>
+                
+                <!-- Phil-IRI Criteria Card -->
+                <div class="philiri-criteria">
+                    <h5><i class="fas fa-info-circle me-2"></i>Phil-IRI Assessment Criteria</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="text-success">Independent Level</h6>
+                                    <p class="mb-0">Word Recognition: 97-100%</p>
+                                    <p class="mb-0">Comprehension: 80-100%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="text-warning">Instructional Level</h6>
+                                    <p class="mb-0">Word Recognition: 90-96%</p>
+                                    <p class="mb-0">Comprehension: 59-79%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="text-danger">Frustration Level</h6>
+                                    <p class="mb-0">Word Recognition: Below 90%</p>
+                                    <p class="mb-0">Comprehension: Below 59%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assessment Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Assessment Type</label>
+                                <select class="form-select" id="filterType">
+                                    <option value="all">All Types</option>
+                                    <option value="Oral Reading in Filipino">Oral Reading in Filipino</option>
+                                    <option value="Oral Reading in English">Oral Reading in English</option>
+                                    <option value="Silent Reading in Filipino">Silent Reading in Filipino</option>
+                                    <option value="Silent Reading in English">Silent Reading in English</option>
+                                    <option value="Pre-test">Pre-test</option>
+                                    <option value="Post-test">Post-test</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Reading Level</label>
+                                <select class="form-select" id="filterLevel">
+                                    <option value="all">All Levels</option>
+                                    <option value="Independent">Independent</option>
+                                    <option value="Instructional">Instructional</option>
+                                    <option value="Frustration">Frustration</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Date From</label>
+                                <input type="date" class="form-control" id="filterDateFrom">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Date To</label>
+                                <input type="date" class="form-control" id="filterDateTo">
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-primary" id="applyFilters">
+                                <i class="fas fa-filter me-1"></i>Apply Filters
+                            </button>
+                            <button class="btn btn-outline-secondary" id="resetFilters">
+                                <i class="fas fa-redo me-1"></i>Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assessment History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="m-0 font-weight-bold">Assessment History</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="assessmentHistoryTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Student</th>
+                                        <th>Type</th>
+                                        <th>Passage</th>
+                                        <th>Word Recognition</th>
+                                        <th>Comprehension</th>
+                                        <th>Reading Level</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assessmentHistoryTableBody">
+                                    <!-- Assessment data will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assessment Analysis -->
+                <div class="row mt-4">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">Assessment Type Distribution</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="assessmentTypeChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">Reading Level Progress</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="readingLevelChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <footer class="text-center mt-5 mb-3">
+                    <p class="text-muted small">Grade 5 Reading Progress Tracker &copy; 2023 - Based on Phil-IRI Guidelines</p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Modal -->
+    <div class="modal fade" id="assessmentModal" tabindex="-1" aria-labelledby="assessmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assessmentModalLabel">New Reading Assessment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assessmentForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="assessmentStudent" class="form-label">Student *</label>
+                                <select class="form-select" id="assessmentStudent" required>
+                                    <option value="" selected disabled>Select a student...</option>
+                                    <!-- Student options will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="assessmentDate" class="form-label">Date *</label>
+                                <input type="date" class="form-control" id="assessmentDate" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="assessmentType" class="form-label">Assessment Type *</label>
+                                <select class="form-select" id="assessmentType" required>
+                                    <option value="" selected disabled>Select type...</option>
+                                    <option value="Oral Reading in Filipino">Oral Reading in Filipino</option>
+                                    <option value="Oral Reading in English">Oral Reading in English</option>
+                                    <option value="Silent Reading in Filipino">Silent Reading in Filipino</option>
+                                    <option value="Silent Reading in English">Silent Reading in English</option>
+                                    <option value="Pre-test">Pre-test</option>
+                                    <option value="Post-test">Post-test</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="assessmentPassage" class="form-label">Reading Passage *</label>
+                                <input type="text" class="form-control" id="assessmentPassage" placeholder="Passage title" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="wordRecognition" class="form-label">Word Recognition Score *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="wordRecognition" min="0" max="100" placeholder="Percentage" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Number of words correctly read</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="comprehension" class="form-label">Comprehension Score *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="comprehension" min="0" max="100" placeholder="Percentage" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Correct answers to comprehension questions</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="readingLevel" class="form-label">Reading Level</label>
+                                <div class="form-control-plaintext" id="readingLevelDisplay">Not yet calculated</div>
+                                <input type="hidden" id="readingLevel" name="readingLevel">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="assessmentNotes" class="form-label">Notes & Observations</label>
+                            <textarea class="form-control" id="assessmentNotes" rows="3" placeholder="Record observations about reading fluency, errors, strategies used, etc."></textarea>
+                        </div>
+                        
+                        <div class="philiri-guide">
+                            <h6>Phil-IRI Scoring Guidelines</h6>
+                            <ul class="small">
+                                <li><strong>Independent Level:</strong> 97-100% Word Recognition, 80-100% Comprehension</li>
+                                <li><strong>Instructional Level:</strong> 90-96% Word Recognition, 59-79% Comprehension</li>
+                                <li><strong>Frustration Level:</strong> Below 90% Word Recognition, Below 59% Comprehension</li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveAssessmentBtn">Save Assessment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Assessment Modal -->
+    <div class="modal fade" id="viewAssessmentModal" tabindex="-1" aria-labelledby="viewAssessmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewAssessmentModalLabel">Assessment Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="viewAssessmentContent">
+                    <!-- Assessment details will be populated here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="printAssessmentBtn">Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Data storage keys
+        const STUDENTS_KEY = 'grade5ReadingTracker_students';
+        const ASSESSMENTS_KEY = 'grade5ReadingTracker_assessments';
+        const SETTINGS_KEY = 'grade5ReadingTracker_settings';
+        const CONFIG_KEY = 'grade5ReadingTracker_config';
+
+        // Initialize data
+        let students = JSON.parse(localStorage.getItem(STUDENTS_KEY)) || [];
+        let assessments = JSON.parse(localStorage.getItem(ASSESSMENTS_KEY)) || [];
+        let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {
+            schoolName: 'Elementary School',
+            teacherName: 'Ms. Reyes',
+            gradeLevel: 'Grade 5',
+            schoolYear: '2023-2024'
+        };
+        let config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {
+            independentWR: 97,
+            independentComp: 80,
+            instructionalWR: 90,
+            instructionalComp: 59
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current date as default for assessment date
+            document.getElementById('assessmentDate').valueAsDate = new Date();
+            
+            // Load student dropdown
+            populateStudentDropdown();
+            
+            // Load assessment history
+            loadAssessmentHistory();
+            
+            // Initialize charts
+            initializeCharts();
+            
+            // Add event listeners
+            document.getElementById('saveAssessmentBtn').addEventListener('click', addAssessment);
+            document.getElementById('applyFilters').addEventListener('click', applyFilters);
+            document.getElementById('resetFilters').addEventListener('click', resetFilters);
+            
+            // Auto-calculate reading level when scores change
+            document.getElementById('wordRecognition').addEventListener('input', calculateReadingLevel);
+            document.getElementById('comprehension').addEventListener('input', calculateReadingLevel);
+        });
+
+        // Function to populate student dropdown
+        function populateStudentDropdown() {
+            const assessmentStudentSelect = document.getElementById('assessmentStudent');
+            
+            // Clear existing options
+            assessmentStudentSelect.innerHTML = '<option value="" selected disabled>Select a student...</option>';
+            
+            // Add students to dropdown
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = student.name;
+                assessmentStudentSelect.appendChild(option);
+            });
+        }
+
+        // Function to calculate reading level based on Phil-IRI criteria
+        function calculateReadingLevel() {
+            const wr = parseInt(document.getElementById('wordRecognition').value) || 0;
+            const comp = parseInt(document.getElementById('comprehension').value) || 0;
+            
+            let readingLevel = 'Not yet calculated';
+            let levelClass = '';
+            
+            if (wr > 0 || comp > 0) {
+                if (wr >= config.independentWR && comp >= config.independentComp) {
+                    readingLevel = 'Independent';
+                    levelClass = 'level-independent';
+                } else if (wr >= config.instructionalWR && comp >= config.instructionalComp) {
+                    readingLevel = 'Instructional';
+                    levelClass = 'level-instructional';
+                } else {
+                    readingLevel = 'Frustration';
+                    levelClass = 'level-frustration';
+                }
+            }
+            
+            document.getElementById('readingLevelDisplay').textContent = readingLevel;
+            document.getElementById('readingLevelDisplay').className = 'form-control-plaintext ' + levelClass;
+            document.getElementById('readingLevel').value = readingLevel;
+        }
+
+        // Function to add a new assessment
+        function addAssessment() {
+            const studentId = parseInt(document.getElementById('assessmentStudent').value);
+            const date = document.getElementById('assessmentDate').value;
+            const type = document.getElementById('assessmentType').value;
+            const passage = document.getElementById('assessmentPassage').value;
+            const wordRecognition = parseInt(document.getElementById('wordRecognition').value);
+            const comprehension = parseInt(document.getElementById('comprehension').value);
+            const readingLevel = document.getElementById('readingLevel').value;
+            const notes = document.getElementById('assessmentNotes').value;
+
+            // Validate required fields
+            if (!studentId || !date || !type || !passage || isNaN(wordRecognition) || isNaN(comprehension)) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            const newAssessment = {
+                id: Date.now(),
+                studentId,
+                date,
+                type,
+                passage,
+                wordRecognition,
+                comprehension,
+                readingLevel,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            // Save to localStorage
+            assessments.push(newAssessment);
+            localStorage.setItem(ASSESSMENTS_KEY, JSON.stringify(assessments));
+
+            // Update student's reading level
+            updateStudentReadingLevel(studentId, readingLevel);
+
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('assessmentModal'));
+            if (modal) modal.hide();
+            document.getElementById('assessmentForm').reset();
+            document.getElementById('assessmentDate').valueAsDate = new Date();
+            document.getElementById('readingLevelDisplay').textContent = 'Not yet calculated';
+            document.getElementById('readingLevelDisplay').className = 'form-control-plaintext';
+
+            // Reload assessment history and charts
+            loadAssessmentHistory();
+            updateCharts();
+            
+            alert('Assessment saved successfully!');
+        }
+
+        // Function to update student's reading level
+        function updateStudentReadingLevel(studentId, readingLevel) {
+            const studentIndex = students.findIndex(s => s.id === studentId);
+            if (studentIndex !== -1) {
+                students[studentIndex].readingLevel = readingLevel;
+                localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+            }
+        }
+
+        // Function to load assessment history
+        function loadAssessmentHistory() {
+            const tableBody = document.getElementById('assessmentHistoryTableBody');
+            tableBody.innerHTML = '';
+            
+            if (assessments.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="empty-state">
+                                <i class="fas fa-file-alt"></i>
+                                <h5>No Assessments Found</h5>
+                                <p>Add assessments to track student progress</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assessmentModal">
+                                    <i class="fas fa-plus me-1"></i>New Assessment
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Sort assessments by date (newest first)
+            const sortedAssessments = [...assessments].sort((a, b) => 
+                new Date(b.date) - new Date(a.date)
+            );
+            
+            sortedAssessments.forEach(assessment => {
+                const student = students.find(s => s.id === assessment.studentId);
+                if (!student) return;
+                
+                // Determine reading level class
+                let levelClass = '';
+                if (assessment.readingLevel === 'Independent') levelClass = 'level-independent';
+                else if (assessment.readingLevel === 'Instructional') levelClass = 'level-instructional';
+                else if (assessment.readingLevel === 'Frustration') levelClass = 'level-frustration';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(assessment.date)}</td>
+                    <td>${student.name}</td>
+                    <td>${assessment.type}</td>
+                    <td>${assessment.passage}</td>
+                    <td>${assessment.wordRecognition}%</td>
+                    <td>${assessment.comprehension}%</td>
+                    <td><span class="reading-level ${levelClass}">${assessment.readingLevel}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-assessment" data-id="${assessment.id}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-assessment" data-id="${assessment.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners for view and delete buttons
+            document.querySelectorAll('.view-assessment').forEach(button => {
+                button.addEventListener('click', function() {
+                    const assessmentId = parseInt(this.getAttribute('data-id'));
+                    viewAssessment(assessmentId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-assessment').forEach(button => {
+                button.addEventListener('click', function() {
+                    const assessmentId = parseInt(this.getAttribute('data-id'));
+                    deleteAssessment(assessmentId);
+                });
+            });
+        }
+
+        // Function to view assessment details
+        function viewAssessment(assessmentId) {
+            const assessment = assessments.find(a => a.id === assessmentId);
+            if (!assessment) return;
+            
+            const student = students.find(s => s.id === assessment.studentId);
+            if (!student) return;
+            
+            // Determine reading level class
+            let levelClass = '';
+            if (assessment.readingLevel === 'Independent') levelClass = 'level-independent';
+            else if (assessment.readingLevel === 'Instructional') levelClass = 'level-instructional';
+            else if (assessment.readingLevel === 'Frustration') levelClass = 'level-frustration';
+            
+            const content = `
+                <div class="assessment-details">
+                    <h4>${student.name}</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Date:</strong> ${formatDate(assessment.date)}</p>
+                            <p><strong>Assessment Type:</strong> ${assessment.type}</p>
+                            <p><strong>Reading Passage:</strong> ${assessment.passage}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Word Recognition:</strong> ${assessment.wordRecognition}%</p>
+                            <p><strong>Comprehension:</strong> ${assessment.comprehension}%</p>
+                            <p><strong>Reading Level:</strong> <span class="reading-level ${levelClass}">${assessment.readingLevel}</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5>Notes & Observations</h5>
+                <p>${assessment.notes || 'No notes recorded for this assessment.'}</p>
+                
+                <div class="philiri-guide mt-4">
+                    <h6>Phil-IRI Interpretation</h6>
+                    <p>Based on the Phil-IRI criteria:</p>
+                    <ul>
+                        <li>Word Recognition Score: ${assessment.wordRecognition}% - ${getWRInterpretation(assessment.wordRecognition)}</li>
+                        <li>Comprehension Score: ${assessment.comprehension}% - ${getCompInterpretation(assessment.comprehension)}</li>
+                    </ul>
+                    <p>Overall Reading Level: <strong>${assessment.readingLevel}</strong></p>
+                </div>
+            `;
+            
+            document.getElementById('viewAssessmentContent').innerHTML = content;
+            
+            const modal = new bootstrap.Modal(document.getElementById('viewAssessmentModal'));
+            modal.show();
+        }
+
+        // Function to get Word Recognition interpretation
+        function getWRInterpretation(score) {
+            if (score >= config.independentWR) return 'Independent Level';
+            if (score >= config.instructionalWR) return 'Instructional Level';
+            return 'Frustration Level';
+        }
+
+        // Function to get Comprehension interpretation
+        function getCompInterpretation(score) {
+            if (score >= config.independentComp) return 'Independent Level';
+            if (score >= config.instructionalComp) return 'Instructional Level';
+            return 'Frustration Level';
+        }
+
+        // Function to delete assessment
+        function deleteAssessment(assessmentId) {
+            if (confirm('Are you sure you want to delete this assessment?')) {
+                assessments = assessments.filter(a => a.id !== assessmentId);
+                localStorage.setItem(ASSESSMENTS_KEY, JSON.stringify(assessments));
+                
+                // Reload assessment history and charts
+                loadAssessmentHistory();
+                updateCharts();
+                
+                alert('Assessment deleted successfully!');
+            }
+        }
+
+        // Function to apply filters
+        function applyFilters() {
+            const typeFilter = document.getElementById('filterType').value;
+            const levelFilter = document.getElementById('filterLevel').value;
+            const dateFrom = document.getElementById('filterDateFrom').value;
+            const dateTo = document.getElementById('filterDateTo').value;
+            
+            const tableBody = document.getElementById('assessmentHistoryTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                let showRow = true;
+                
+                // Apply type filter
+                if (typeFilter !== 'all') {
+                    const typeCell = row.cells[2];
+                    if (typeCell.textContent !== typeFilter) {
+                        showRow = false;
+                    }
+                }
+                
+                // Apply level filter
+                if (levelFilter !== 'all') {
+                    const levelCell = row.cells[6];
+                    if (!levelCell.textContent.includes(levelFilter)) {
+                        showRow = false;
+                    }
+                }
+                
+                // Apply date filters
+                if (dateFrom) {
+                    const dateCell = row.cells[0];
+                    const cellDate = new Date(dateCell.textContent);
+                    const filterFromDate = new Date(dateFrom);
+                    
+                    if (cellDate < filterFromDate) {
+                        showRow = false;
+                    }
+                }
+                
+                if (dateTo) {
+                    const dateCell = row.cells[0];
+                    const cellDate = new Date(dateCell.textContent);
+                    const filterToDate = new Date(dateTo);
+                    filterToDate.setDate(filterToDate.getDate() + 1); // Include the end date
+                    
+                    if (cellDate > filterToDate) {
+                        showRow = false;
+                    }
+                }
+                
+                row.style.display = showRow ? '' : 'none';
+            });
+        }
+
+        // Function to reset filters
+        function resetFilters() {
+            document.getElementById('filterType').value = 'all';
+            document.getElementById('filterLevel').value = 'all';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            
+            const tableBody = document.getElementById('assessmentHistoryTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                row.style.display = '';
+            });
+        }
+
+        // Function to initialize charts
+        function initializeCharts() {
+            // Assessment Type Distribution Chart
+            const typeCtx = document.getElementById('assessmentTypeChart').getContext('2d');
+            window.typeChart = new Chart(typeCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Oral Reading in Filipino', 'Oral Reading in English', 'Silent Reading in Filipino', 'Silent Reading in English', 'Pre-test', 'Post-test'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Reading Level Progress Chart
+            const levelCtx = document.getElementById('readingLevelChart').getContext('2d');
+            window.levelChart = new Chart(levelCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Independent', 'Instructional', 'Frustration'],
+                    datasets: [{
+                        label: 'Number of Students',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stepSize: 1
+                        }
+                    }
+                }
+            });
+            
+            // Update charts with current data
+            updateCharts();
+        }
+
+        // Function to update charts with current data
+        function updateCharts() {
+            // Count assessments by type
+            const typeCounts = {
+                'Oral Reading in Filipino': 0,
+                'Oral Reading in English': 0,
+                'Silent Reading in Filipino': 0,
+                'Silent Reading in English': 0,
+                'Pre-test': 0,
+                'Post-test': 0
+            };
+            
+            assessments.forEach(assessment => {
+                if (typeCounts.hasOwnProperty(assessment.type)) {
+                    typeCounts[assessment.type]++;
+                }
+            });
+            
+            // Update type chart
+            window.typeChart.data.datasets[0].data = [
+                typeCounts['Oral Reading in Filipino'],
+                typeCounts['Oral Reading in English'],
+                typeCounts['Silent Reading in Filipino'],
+                typeCounts['Silent Reading in English'],
+                typeCounts['Pre-test'],
+                typeCounts['Post-test']
+            ];
+            window.typeChart.update();
+            
+            // Count students by reading level
+            const levelCounts = {
+                'Independent': 0,
+                'Instructional': 0,
+                'Frustration': 0
+            };
+            
+            students.forEach(student => {
+                if (levelCounts.hasOwnProperty(student.readingLevel)) {
+                    levelCounts[student.readingLevel]++;
+                }
+            });
+            
+            // Update level chart
+            window.levelChart.data.datasets[0].data = [
+                levelCounts['Independent'],
+                levelCounts['Instructional'],
+                levelCounts['Frustration']
+            ];
+            window.levelChart.update();
+        }
+
+        // Utility function to format date
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+    </script>
+</body>
+</html>

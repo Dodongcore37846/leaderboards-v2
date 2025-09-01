@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 5 Reading Progress Tracker - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <style>
+        :root {
+            --primary: #4e73df;
+            --secondary: #6f42c1;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fc;
+            --dark: #5a5c69;
+        }
+        
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary) 10%, var(--secondary) 100%);
+            height: 100vh;
+            position: fixed;
+            color: white;
+            padding-top: 20px;
+            width: 250px;
+            overflow-y: auto;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 15px 20px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .header {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: bold;
+            color: var(--dark);
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .stat-card.success {
+            border-left-color: var(--success);
+        }
+        
+        .stat-card.info {
+            border-left-color: var(--info);
+        }
+        
+        .stat-card.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-card.success .stat-number {
+            color: var(--success);
+        }
+        
+        .stat-card.info .stat-number {
+            color: var(--info);
+        }
+        
+        .stat-card.warning .stat-number {
+            color: var(--warning);
+        }
+        
+        .summary-table {
+            font-size: 0.9rem;
+        }
+        
+        .summary-table th {
+            background-color: #f8f9fc;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .summary-table tr:hover {
+            background-color: #f8f9fc;
+        }
+        
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+        
+        .reading-level {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .level-independent {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .level-instructional {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .level-frustration {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .improvement-positive {
+            color: var(--success);
+            font-weight: bold;
+        }
+        
+        .improvement-negative {
+            color: var(--danger);
+            font-weight: bold;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        
+        /* Custom styling for the Data Summary tab */
+        .data-summary-section {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .data-summary-section h5 {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6e707e;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #5a5c69;
+        }
+        
+        .trend-indicator {
+            font-size: 0.9rem;
+            margin-left: 5px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .firebase-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        .status-connected {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .status-disconnected {
+            background-color: var(--danger);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav style="width:100%;background:linear-gradient(90deg,#4e73df,#6f42c1);padding:12px 0;margin-bottom:20px;display:flex;justify-content:center;gap:18px;border-radius:10px;">
+        <a href="dashboard.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="students.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-user-graduate"></i> Students</a>
+        <a href="assessment.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-file-alt"></i> Assessments</a>
+        <a href="reading.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-book"></i> Reading</a>
+        <a href="reading-progress.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-chart-line"></i> Reading Progress</a>
+        <a href="leaderboard.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-trophy"></i> Leaderboard</a>
+        <a href="roleta.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-wheel"></i> Spin the Wheel</a>
+        <a href="timer.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-stopwatch"></i> Timer</a>
+        <a href="print.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-print"></i> Print Reports</a>
+        <a href="settings.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-cog"></i> Settings</a>
+        <a href="#" id="logoutBtn" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-sign-in-alt"></i> Logout</a>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar d-md-block">
+                <div class="text-center mb-4">
+                    <h4><i class="fas fa-book-reader me-2"></i>Reading Tracker</h4>
+                    <p class="text-white-50 small">Grade 5 Phil-IRI Monitoring</p>
+                </div>
+                
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="dashboard.html">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="students.html">
+                            <i class="fas fa-user-graduate me-2"></i>Students
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="reading-progress.html">
+                            <i class="fas fa-chart-line me-2"></i>Reading Progress
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="assessment.html">
+                            <i class="fas fa-file-alt me-2"></i>Assessments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="leaderboard.html">
+                            <i class="fas fa-trophy me-2"></i>Leaderboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="print.html">
+                            <i class="fas fa-print me-2"></i>Print Reports
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="settings.html">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="mt-5 text-center">
+                    <div class="card bg-light text-dark">
+                        <div class="card-body py-3">
+                            <h6>Phil-IRI Guide</h6>
+                            <p class="small mb-0">Independent: 97-100% WR, 80-100% Comp</p>
+                            <p class="small mb-0">Instructional: 90-96% WR, 59-79% Comp</p>
+                            <p class="small">Frustration: Below 90% WR, Below 59% Comp</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Data Summary Tab -->
+                <div id="data-summary">
+                    <div class="header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>Data Summary</h4>
+                        <div id="firebase-status" class="firebase-status status-connected">
+                            <i class="fas fa-database me-1"></i> Cloud Connected
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row mt-4">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card">
+                                <div class="card-body">
+                                    <div class="metric-label">Average Word Recognition</div>
+                                    <div class="metric-value" id="avg-wr">0.0%</div>
+                                    <div class="mt-2">
+                                        <span class="improvement-positive" id="wr-trend">+0.0% <i class="fas fa-arrow-up"></i></span>
+                                        <span class="text-muted small">from last month</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card success">
+                                <div class="card-body">
+                                    <div class="metric-label">Average Comprehension</div>
+                                    <div class="metric-value" id="avg-comp">0.0%</div>
+                                    <div class="mt-2">
+                                        <span class="improvement-positive" id="comp-trend">+0.0% <i class="fas fa-arrow-up"></i></span>
+                                        <span class="text-muted small">from last month</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card info">
+                                <div class="card-body">
+                                    <div class="metric-label">Assessments Completed</div>
+                                    <div class="metric-value" id="total-assessments">0</div>
+                                    <div class="mt-2">
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <span class="text-muted small">of yearly goal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card warning">
+                                <div class="card-body">
+                                    <div class="metric-label">Improvement Rate</div>
+                                    <div class="metric-value" id="improvement-rate">0.0%</div>
+                                    <div class="mt-2">
+                                        <span class="improvement-positive" id="improve-trend">+0.0% <i class="fas fa-arrow-up"></i></span>
+                                        <span class="text-muted small">from last term</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts and Visualizations -->
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold">Performance by Assessment Type</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="assessmentTypeChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold">Performance by Gender</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="genderChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Summary Tables -->
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold">Reading Level Distribution</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered summary-table" id="readingLevelTable">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Reading Level</th>
+                                                    <th>Count</th>
+                                                    <th>Percentage</th>
+                                                    <th>Average WR</th>
+                                                    <th>Average Comp</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><span class="reading-level level-independent">Independent</span></td>
+                                                    <td id="independent-count">0</td>
+                                                    <td id="independent-percent">0.0%</td>
+                                                    <td id="independent-wr">0.0%</td>
+                                                    <td id="independent-comp">0.0%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="reading-level level-instructional">Instructional</span></td>
+                                                    <td id="instructional-count">0</td>
+                                                    <td id="instructional-percent">0.0%</td>
+                                                    <td id="instructional-wr">0.0%</td>
+                                                    <td id="instructional-comp">0.0%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="reading-level level-frustration">Frustration</span></td>
+                                                    <td id="frustration-count">0</td>
+                                                    <td id="frustration-percent">0.0%</td>
+                                                    <td id="frustration-wr">0.0%</td>
+                                                    <td id="frustration-comp">0.0%</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold">Assessment Type Summary</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered summary-table" id="assessmentTypeTable">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Assessment Type</th>
+                                                    <th>Count</th>
+                                                    <th>Average WR</th>
+                                                    <th>Average Comp</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- This will be populated by JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Progress Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold">Student Progress Overview</h6>
+                            <button class="btn btn-sm btn-primary" id="refresh-data">
+                                <i class="fas fa-sync-alt"></i> Refresh Data
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered summary-table" id="studentProgressTable">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Student Name</th>
+                                            <th>First Assessment</th>
+                                            <th>Latest Assessment</th>
+                                            <th>Progress (WR)</th>
+                                            <th>Progress (Comp)</th>
+                                            <th>Current Level</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- This will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA13LOZxJXQcVq83Gufk7TbTHdkWxhRaak",
+            authDomain: "leaderboard-f8064.firebaseapp.com",
+            projectId: "leaderboard-f8064",
+            storageBucket: "leaderboard-f8064.appspot.com",
+            messagingSenderId: "889576004965",
+            appId: "1:889576004965:web:d0565a575950f03560d58c",
+            measurementId: "G-0KWHDEJ0R7"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Global variables
+        let assessments = [];
+        let students = [];
+        let typeChart = null;
+        let genderChart = null;
+        
+        // Authentication check
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser || !currentUser.isAuthenticated) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Set up logout button
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+            
+            // Load data from Firebase
+            loadData();
+            
+            // Set up refresh button
+            document.getElementById('refresh-data').addEventListener('click', function() {
+                loadData();
+            });
+        });
+        
+        // Load data from Firebase
+        async function loadData() {
+            try {
+                // Show loading state
+                document.getElementById('firebase-status').className = 'firebase-status status-disconnected';
+                document.getElementById('firebase-status').innerHTML = '<i class="fas fa-sync-alt loading-spinner me-1"></i> Loading Data...';
+                
+                // Load students
+                const studentsSnapshot = await db.collection('students').get();
+                students = [];
+                studentsSnapshot.forEach(doc => {
+                    students.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Load assessments
+                const assessmentsSnapshot = await db.collection('assessments').get();
+                assessments = [];
+                assessmentsSnapshot.forEach(doc => {
+                    assessments.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Update UI with loaded data
+                updateSummaryCards();
+                updateReadingLevelTable();
+                updateAssessmentTypeTable();
+                updateStudentProgressTable();
+                updateCharts();
+                
+                // Show success status
+                document.getElementById('firebase-status').className = 'firebase-status status-connected';
+                document.getElementById('firebase-status').innerHTML = '<i class="fas fa-database me-1"></i> Cloud Connected';
+                
+            } catch (error) {
+                console.error("Error loading data:", error);
+                document.getElementById('firebase-status').className = 'firebase-status status-disconnected';
+                document.getElementById('firebase-status').innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Connection Error';
+            }
+        }
+        
+        // Utility functions
+        function average(arr) {
+            if (!arr.length) return 0;
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+        
+        // Summary Cards
+        function updateSummaryCards() {
+            // Average Word Recognition
+            const wrScores = assessments.map(a => parseFloat(a.wordRecognition) || 0);
+            const avgWR = wrScores.length ? average(wrScores).toFixed(1) : '0.0';
+            document.getElementById('avg-wr').textContent = `${avgWR}%`;
+            
+            // Average Comprehension
+            const compScores = assessments.map(a => parseFloat(a.comprehension) || 0);
+            const avgComp = compScores.length ? average(compScores).toFixed(1) : '0.0';
+            document.getElementById('avg-comp').textContent = `${avgComp}%`;
+            
+            // Assessments Completed
+            const totalAssessments = assessments.length;
+            document.getElementById('total-assessments').textContent = totalAssessments;
+            
+            // Improvement Rate (dummy calculation: last assessment vs first)
+            let improvementRate = '0.0';
+            if (assessments.length > 1) {
+                const sorted = [...assessments].sort((a, b) => new Date(a.date) - new Date(b.date));
+                const firstWR = parseFloat(sorted[0].wordRecognition) || 0;
+                const lastWR = parseFloat(sorted[sorted.length - 1].wordRecognition) || 0;
+                improvementRate = ((lastWR - firstWR) / firstWR * 100).toFixed(1);
+            }
+            document.getElementById('improvement-rate').textContent = `${improvementRate}%`;
+            
+            // Update progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            const progressPercent = Math.min((totalAssessments / 200) * 100, 100); // Assuming 200 is the yearly goal
+            progressBar.style.width = `${progressPercent}%`;
+        }
+        
+        // Reading Level Distribution Table
+        function updateReadingLevelTable() {
+            const levels = ['Independent', 'Instructional', 'Frustration'];
+            
+            levels.forEach(level => {
+                const filtered = assessments.filter(a => a.readingLevel === level);
+                const count = filtered.length;
+                const percent = assessments.length ? ((count / assessments.length) * 100).toFixed(1) : '0.0';
+                const avgWR = filtered.length ? average(filtered.map(a => parseFloat(a.wordRecognition) || 0)).toFixed(1) : '0.0';
+                const avgComp = filtered.length ? average(filtered.map(a => parseFloat(a.comprehension) || 0)).toFixed(1) : '0.0';
+                
+                document.getElementById(`${level.toLowerCase()}-count`).textContent = count;
+                document.getElementById(`${level.toLowerCase()}-percent`).textContent = `${percent}%`;
+                document.getElementById(`${level.toLowerCase()}-wr`).textContent = `${avgWR}%`;
+                document.getElementById(`${level.toLowerCase()}-comp`).textContent = `${avgComp}%`;
+            });
+        }
+        
+        // Assessment Type Summary Table
+        function updateAssessmentTypeTable() {
+            const types = [
+                'Oral Reading in Filipino',
+                'Oral Reading in English',
+                'Silent Reading in Filipino',
+                'Silent Reading in English',
+                'Pre-test',
+                'Post-test'
+            ];
+            
+            const tbody = document.querySelector('#assessmentTypeTable tbody');
+            tbody.innerHTML = '';
+            
+            types.forEach(type => {
+                const filtered = assessments.filter(a => a.type === type);
+                const count = filtered.length;
+                const avgWR = filtered.length ? average(filtered.map(a => parseFloat(a.wordRecognition) || 0)).toFixed(1) : '0.0';
+                const avgComp = filtered.length ? average(filtered.map(a => parseFloat(a.comprehension) || 0)).toFixed(1) : '0.0';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${type}</td>
+                        <td>${count}</td>
+                        <td>${avgWR}%</td>
+                        <td>${avgComp}%</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        // Student Progress Table
+        function updateStudentProgressTable() {
+            const tbody = document.querySelector('#studentProgressTable tbody');
+            tbody.innerHTML = '';
+            
+            students.forEach(student => {
+                const studentAssessments = assessments.filter(a => a.studentId === student.id);
+                if (studentAssessments.length === 0) return;
+                
+                const sorted = [...studentAssessments].sort((a, b) => new Date(a.date) - new Date(b.date));
+                const first = sorted[0];
+                const last = sorted[sorted.length - 1];
+                
+                const wrProgress = (parseFloat(last.wordRecognition) - parseFloat(first.wordRecognition)).toFixed(1);
+                const compProgress = (parseFloat(last.comprehension) - parseFloat(first.comprehension)).toFixed(1);
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${student.name}</td>
+                        <td>${formatDate(first.date)}</td>
+                        <td>${formatDate(last.date)}</td>
+                        <td class="${wrProgress >= 0 ? 'improvement-positive' : 'improvement-negative'}">${wrProgress >= 0 ? '+' : ''}${wrProgress}%</td>
+                        <td class="${compProgress >= 0 ? 'improvement-positive' : 'improvement-negative'}">${compProgress >= 0 ? '+' : ''}${compProgress}%</td>
+                        <td><span class="reading-level level-${last.readingLevel.toLowerCase()}">${last.readingLevel}</span></td>
+                    </tr>
+                `;
+            });
+        }
+        
+        // Charts
+        function updateCharts() {
+            // Assessment Type Chart
+            const typeLabels = [
+                'Oral Reading in Filipino',
+                'Oral Reading in English',
+                'Silent Reading in Filipino',
+                'Silent Reading in English',
+                'Pre-test',
+                'Post-test'
+            ];
+            
+            const wrData = typeLabels.map(type => {
+                const filtered = assessments.filter(a => a.type === type);
+                return filtered.length ? average(filtered.map(a => parseFloat(a.wordRecognition) || 0)) : 0;
+            });
+            
+            const compData = typeLabels.map(type => {
+                const filtered = assessments.filter(a => a.type === type);
+                return filtered.length ? average(filtered.map(a => parseFloat(a.comprehension) || 0)) : 0;
+            });
+            
+            const typeCtx = document.getElementById('assessmentTypeChart').getContext('2d');
+            if (typeChart) typeChart.destroy();
+            
+            typeChart = new Chart(typeCtx, {
+                type: 'bar',
+                data: {
+                    labels: typeLabels,
+                    datasets: [
+                        {
+                            label: 'Word Recognition',
+                            data: wrData,
+                            backgroundColor: '#4e73df'
+                        },
+                        {
+                            label: 'Comprehension',
+                            data: compData,
+                            backgroundColor: '#1cc88a'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Gender Chart
+            const genderLabels = ['Male', 'Female'];
+            const maleIds = students.filter(s => s.gender === 'male').map(s => s.id);
+            const femaleIds = students.filter(s => s.gender === 'female').map(s => s.id);
+            
+            const maleAssessments = assessments.filter(a => maleIds.includes(a.studentId));
+            const femaleAssessments = assessments.filter(a => femaleIds.includes(a.studentId));
+            
+            const wrMale = maleAssessments.length ? average(maleAssessments.map(a => parseFloat(a.wordRecognition) || 0)) : 0;
+            const wrFemale = femaleAssessments.length ? average(femaleAssessments.map(a => parseFloat(a.wordRecognition) || 0)) : 0;
+            const compMale = maleAssessments.length ? average(maleAssessments.map(a => parseFloat(a.comprehension) || 0)) : 0;
+            const compFemale = femaleAssessments.length ? average(femaleAssessments.map(a => parseFloat(a.comprehension) || 0)) : 0;
+            
+            const genderCtx = document.getElementById('genderChart').getContext('2d');
+            if (genderChart) genderChart.destroy();
+            
+            genderChart = new Chart(genderCtx, {
+                type: 'bar',
+                data: {
+                    labels: genderLabels,
+                    datasets: [
+                        {
+                            label: 'Word Recognition',
+                            data: [wrMale, wrFemale],
+                            backgroundColor: '#4e73df'
+                        },
+                        {
+                            label: 'Comprehension',
+                            data: [compMale, compFemale],
+                            backgroundColor: '#1cc88a'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    maintainAspectRatio: false
+                }
+            });
+        }
+    </script>
+</body>
+</html>
