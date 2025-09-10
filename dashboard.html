@@ -26,6 +26,7 @@
         body {
             background-color: #f8f9fc;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #4a4a4a;
         }
         
         .sidebar {
@@ -36,6 +37,7 @@
             padding-top: 20px;
             width: 250px;
             overflow-y: auto;
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
         }
         
         .sidebar .nav-link {
@@ -43,17 +45,20 @@
             padding: 15px 20px;
             margin: 5px 0;
             border-radius: 5px;
+            transition: all 0.3s ease;
         }
         
         .sidebar .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.15);
             color: white;
+            transform: translateX(5px);
         }
         
         .sidebar .nav-link.active {
             background-color: rgba(255, 255, 255, 0.2);
             color: white;
             font-weight: bold;
+            box-shadow: inset 3px 0 0 white;
         }
         
         .main-content {
@@ -63,7 +68,7 @@
         
         .header {
             background-color: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
             padding: 15px 20px;
             margin-bottom: 20px;
             border-radius: 8px;
@@ -75,6 +80,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
             transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden;
         }
         
         .card:hover {
@@ -88,6 +94,7 @@
             font-weight: bold;
             color: var(--dark);
             border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
         }
         
         .stat-card {
@@ -289,22 +296,89 @@
             font-size: 0.85rem;
             opacity: 0.8;
         }
+        
+        /* Navigation Bar Styling */
+        .top-nav {
+            width: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            padding: 12px 0;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .top-nav a {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 1rem;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .top-nav a:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        /* Button Styling */
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a5fc8;
+            border-color: #3a5fc8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Table Styling */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+        
+        /* Chart Container Styling */
+        .chart-container {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+        }
     </style>
 </head>
 <body>
     <!-- Navigation Bar -->
-    <nav style="width:100%;background:linear-gradient(90deg,#4e73df,#6f42c1);padding:12px 0;margin-bottom:20px;display:flex;justify-content:center;gap:18px;border-radius:10px;">
-        <a href="dashboard.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-home"></i> Dashboard</a>
-        <a href="students.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-user-graduate"></i> Students</a>
-        <a href="assessment.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-file-alt"></i> Assessments</a>
-        <a href="reading.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-book"></i> Reading</a>
-        <a href="reading-progress.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-chart-line"></i> Reading Progress</a>
-        <a href="leaderboard.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-trophy"></i> Leaderboard</a>
-        <a href="roleta.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-wheel"></i> Spin the Wheel</a>
-        <a href="timer.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-stopwatch"></i> Timer</a>
-        <a href="print.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-print"></i> Print Reports</a>
-        <a href="settings.html" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-cog"></i> Settings</a>
-        <a href="#" id="logoutBtn" style="color:#fff;font-weight:700;text-decoration:none;font-size:1.1rem;"><i class="fas fa-sign-in-alt"></i> Logout</a>
+    <nav class="top-nav">
+        <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="students.html"><i class="fas fa-user-graduate"></i> Students</a>
+        <a href="assessment.html"><i class="fas fa-file-alt"></i> Assessments</a>
+        <a href="reading.html"><i class="fas fa-book"></i> Reading</a>
+        <a href="reading-progress.html"><i class="fas fa-chart-line"></i> Reading Progress</a>
+        <a href="leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a>
+        <a href="roleta.html"><i class="fas fa-wheel"></i> Spin the Wheel</a>
+        <a href="timer.html"><i class="fas fa-stopwatch"></i> Timer</a>
+        <a href="print.html"><i class="fas fa-print"></i> Print Reports</a>
+        <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
+        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </nav>
 
     <div class="container-fluid">
@@ -617,12 +691,14 @@
         });
         
         // Set up logout button
-        document.getElementById('logoutBtn').addEventListener('click', function() {
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
             auth.signOut().then(() => {
                 // Sign-out successful
                 window.location.href = 'login.html';
             }).catch((error) => {
                 console.error("Sign out error:", error);
+                alert("Error signing out. Please try again.");
             });
         });
         
